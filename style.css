@@ -87,6 +87,7 @@ body {
   margin-top: -6rem;
   padding-top: 15rem;
   padding-bottom: 5rem;
+  font-family: 'gabriola';
 }
 
 .home h2,
@@ -144,6 +145,9 @@ body {
   font-family: 'Sacramento', cursive;
 }
 
+.tanggalacara p {
+  margin: 0;
+}
 /* .home .couple .col-lg-6:last-child .col-8 {
   text-align: right;
 } */

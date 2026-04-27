@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Tangkap Hadiah Panjat Pinang 8-Bit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    /* Pengaturan dasar halaman */
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #333;
+      font-family: 'Press Start 2P', cursive;
+      color: white;
+      overflow: hidden;
+      /* Mencegah scroll */
+    }
+
+    /* Kontainer utama game untuk menjaga rasio aspek */
+    #game-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      max-width: 56.25vh;
+      /* 9:16 aspect ratio (9/16 * 100vh) */
+      max-height: 177.77vw;
+      /* 9:16 aspect ratio (16/9 * 100vw) */
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+      background-color: #000;
+    }
+
+    /* Canvas tempat game digambar */
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background-color: #87CEEB;
+      /* Warna langit */
+    }
+
+    /* Lapisan untuk layar menu (Start/Game Over) */
+    .game-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      align-items: center;
+      text-align: center;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .game-screen h1 {
+      font-size: 2em;
+      margin-top: 10%;
+      margin-bottom: 0;
+      color: #FFD700;
+      /* Warna emas */
+      text-shadow: 4px 4px 0px #C00;
+      /* Bayangan merah */
+    }
+
+    .game-screen h2 {
+      font-size: 1.5em;
+      margin-bottom: 30px;
+    }
+
+    .game-screen p {
+      font-size: 1.2em;
+      margin-bottom: 15px;
+    }
+
+    /* Tombol dengan gaya 8-bit */
+    .button {
+      font-family: 'Press Start 2P', cursive;
+      font-size: 1.5em;
+      padding: 15px 30px;
+      margin: 10px;
+      background-color: #4CAF50;
+      /* Hijau */
+      color: white;
+      border: 4px solid #fff;
+      box-shadow: 6px 6px 0px #2E7D32;
+      /* Bayangan untuk efek 3D */
+      cursor: pointer;
+      transition: all 0.1s ease-in-out;
+    }
+
+    .button:hover {
+      background-color: #66BB6A;
+      box-shadow: 4px 4px 0px #2E7D32;
+      transform: translate(2px, 2px);
+    }
+
+    .button:active {
+      background-color: #388E3C;
+      box-shadow: 0px 0px 0px #2E7D32;
+      transform: translate(6px, 6px);
+    }
+
+    #legend {
+      width: 90%;
+      padding: 15px;
+      background-color: rgba(174, 174, 174, 0.6);
+      border-radius: 10px;
+      border: 2px solid #fff;
+    }
+
+    .legend-category {
+      margin-bottom: 15px;
+    }
+
+    .legend-category:last-child {
+      margin-bottom: 0;
+    }
+
+    .legend-category h3 {
+      font-size: 0.8em;
+      margin: 0 0 10px 0;
+      text-decoration: underline;
+    }
+
+    .legend-icons {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+    }
+
+    .legend-icons canvas {
+      width: 40px;
+      height: 40px;
+      background-color: transparent;
+      /* border: 1px solid #555; */
+      border-radius: 5px;
+    }
+
+    #videoContainer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      display: none;
+    }
+
+    #introVideo {
+      width: 100%;
+      height: auto;
+    }
+
+    /* Sembunyikan layar secara default */
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="videoContainer">
+      <video id="introVideo" src="intro.mp4" muted playsinline></video>
+    </div>
+
+    <!-- Layar Awal -->
+    <div id="startScreen" class="game-screen">
+      <h1>Tangkap Hadiah<br>Panjat Pinang</h1>
+
+      <div id="legend">
+        <div class="legend-category">
+          <h3>TANGKAP INI (+10 POIN)</h3>
+          <div class="legend-icons">
+            <canvas id="legend-kado" width="40" height="40"></canvas>
+            <canvas id="legend-buku" width="40" height="40"></canvas>
+            <canvas id="legend-sandal" width="40" height="40"></canvas>
+          </div>
+        </div>
+        <div class="legend-category">
+          <h3>HINDARI INI (-1 NYAWA)</h3>
+          <div class="legend-icons">
+            <canvas id="legend-oli" width="40" height="40"></canvas>
+            <canvas id="legend-batu" width="40" height="40"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <p id="highScoreStart">Skor Tertinggi: 0</p>
+      <div id="startButton" class="button">MULAI</div>
+    </div>
+
+    <!-- Layar Game Over -->
+    <div id="gameOverScreen" class="game-screen hidden">
+      <h1>GAME OVER</h1>
+      <p id="finalScore">Skor Akhir: 0</p>
+      <p id="highScoreEnd">Skor Tertinggi: 0</p>
+      <div id="retryButton" class="button">COBA LAGI</div>
+    </div>
+  </div>
+
+  <!-- <script>
+    // Inisialisasi elemen-elemen dari DOM
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const startScreen = document.getElementById('startScreen');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const startButton = document.getElementById('startButton');
+    const retryButton = document.getElementById('retryButton');
+    const finalScoreEl = document.getElementById('finalScore');
+    const highScoreStartEl = document.getElementById('highScoreStart');
+    const highScoreEndEl = document.getElementById('highScoreEnd');
+
+    // Pengaturan ukuran canvas responsif dengan rasio 9:16
+    function resizeCanvas() {
+      const container = document.getElementById('game-container');
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Variabel status permainan
+    let score, lives, highScore, gameLoop;
+    let player, fallingObjects;
+    let gameState = 'start'; // 'start', 'playing', 'gameOver'
+
+    let touchLeft = false;
+    let touchRight = false;
+    const keys = { ArrowLeft: false, ArrowRight: false, a: false, d: false };
+
+    let audioCtx;
+    function initAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    function playSound(type) {
+      if (!audioCtx) return;
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+
+      switch (type) {
+        case 'prize':
+          oscillator.type = 'square';
+          oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.2);
+          break;
+        case 'obstacle':
+          oscillator.type = 'sawtooth';
+          oscillator.frequency.setValueAtTime(150, audioCtx.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.4);
+          break;
+        case 'gameOver':
+          oscillator.type = 'triangle';
+          oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
+          oscillator.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 1);
+          gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 1);
+          break;
+        case 'click':
+          oscillator.type = 'sine';
+          oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.1);
+          break;
+        case 'impact':
+          oscillator.type = 'sawtooth';
+          oscillator.frequency.setValueAtTime(100, audioCtx.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.2);
+          break;
+      }
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 1);
+    }
+
+    const playerWidth = canvas.width * 0.15;
+    const playerHeight = canvas.height * 0.05;
+    const groundHeight = canvas.height * 0.08;
+
+    function drawPixelArt(targetCtx, x, y, size, pixels) {
+      const pixelSize = size / pixels.length;
+      for (let row = 0; row < pixels.length; row++) {
+        for (let col = 0; col < pixels[row].length; col++) {
+          if (pixels[row][col]) {
+            targetCtx.fillStyle = pixels[row][col];
+            targetCtx.fillRect(x + col * pixelSize, y + row * pixelSize, pixelSize, pixelSize);
+          }
+        }
+      }
+    }
+
+    const assets = {
+      kado: {
+        type: 'prize', points: 10,
+        sprite: (targetCtx, x, y, w, h) => drawPixelArt(targetCtx, x, y, w, [
+          [0, '#FFFF00', '#FFFF00', 0, 0], ['#FF00FF', '#FF00FF', '#FF00FF', '#FF00FF', '#FF00FF'], ['#FF00FF', '#FFFF00', '#FFFF00', '#FF00FF', '#FF00FF'], ['#FF00FF', '#FF00FF', '#FF00FF', '#FF00FF', '#FF00FF'], ['#FF00FF', '#FF00FF', '#FF00FF', '#FF00FF', '#FF00FF']
+        ])
+      },
+      buku: {
+        type: 'prize', points: 10,
+        sprite: (targetCtx, x, y, w, h) => drawPixelArt(targetCtx, x, y, w, [
+          ['#00BFFF', '#00BFFF', '#00BFFF', '#00BFFF'], ['#00BFFF', '#fff', '#fff', '#00BFFF'], ['#00BFFF', '#fff', '#fff', '#00BFFF'], ['#00BFFF', '#00BFFF', '#00BFFF', '#00BFFF']
+        ])
+      },
+      sandal: {
+        type: 'prize', points: 10,
+        sprite: (targetCtx, x, y, w, h) => drawPixelArt(targetCtx, x, y, w, [
+          [0, '#FFFF00', '#FFFF00', 0], ['#FFFF00', '#FFFF00', '#FFFF00', '#FFFF00'], ['#FFFF00', '#FFFF00', '#FFFF00', '#FFFF00'], ['#FFFF00', '#FFFF00', '#FFFF00', '#FFFF00']
+        ])
+      },
+      oli: {
+        type: 'obstacle',
+        sprite: (targetCtx, x, y, w, h) => drawPixelArt(targetCtx, x, y, w, [
+          [0, '#222', '#222', 0], ['#444', '#222', '#222', '#444'], ['#444', '#111', '#111', '#444'], ['#444', '#111', '#111', '#444'], [0, '#444', '#444', 0]
+        ])
+      },
+      batu: {
+        type: 'obstacle',
+        sprite: (targetCtx, x, y, w, h) => drawPixelArt(targetCtx, x, y, w, [
+          [0, '#666', '#666', 0], ['#666', '#444', '#444', '#666'], ['#666', '#444', '#444', '#666'], [0, '#666', '#666', 0]
+        ])
+      }
+    };
+    const assetKeys = Object.keys(assets);
+
+    function init() {
+      score = 0;
+      lives = 3;
+      highScore = localStorage.getItem('panjatPinangHighScore') || 0;
+      highScoreStartEl.textContent = `Skor Tertinggi: ${highScore}`;
+      highScoreEndEl.textContent = `Skor Tertinggi: ${highScore}`;
+      player = {
+        x: canvas.width / 2 - playerWidth / 2,
+        y: canvas.height - groundHeight - playerHeight,
+        width: playerWidth, height: playerHeight,
+        speed: canvas.width * 0.015,
+      };
+      fallingObjects = [];
+      Object.keys(keys).forEach(key => keys[key] = false);
+      touchLeft = false; touchRight = false;
+    }
+
+    function spawnObject() {
+      const size = canvas.width * 0.1;
+      const x = Math.random() * (canvas.width - size);
+      const speed = (canvas.height * 0.002) + Math.random() * (canvas.height * 0.003);
+      const randomAssetKey = assetKeys[Math.floor(Math.random() * assetKeys.length)];
+      const asset = assets[randomAssetKey];
+      if (!asset) return;
+      fallingObjects.push({ x, y: -size, width: size, height: size, speed, type: asset.type, points: asset.points || 0, sprite: asset.sprite });
+    }
+
+    function update() {
+      if (keys.ArrowLeft || keys.a || touchLeft) player.x -= player.speed;
+      if (keys.ArrowRight || keys.d || touchRight) player.x += player.speed;
+      if (player.x < 0) player.x = 0;
+      if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+
+      for (let i = fallingObjects.length - 1; i >= 0; i--) {
+        const obj = fallingObjects[i];
+        obj.y += obj.speed;
+        if (obj.y + obj.height >= canvas.height - groundHeight) {
+          playSound('impact');
+          fallingObjects.splice(i, 1);
+          continue;
+        }
+        if (player.x < obj.x + obj.width && player.x + player.width > obj.x && player.y < obj.y + obj.height && player.y + player.height > obj.y) {
+          if (obj.type === 'prize') {
+            score += obj.points;
+            playSound('prize');
+          } else if (obj.type === 'obstacle') {
+            lives--;
+            playSound('obstacle');
+          }
+          fallingObjects.splice(i, 1);
+        }
+      }
+      if (Math.random() < 0.018) spawnObject();
+      if (lives <= 0) {
+        gameState = 'gameOver';
+        playSound('gameOver');
+        if (score > highScore) {
+          highScore = score;
+          localStorage.setItem('panjatPinangHighScore', highScore);
+        }
+        finalScoreEl.textContent = `Skor Akhir: ${score}`;
+        highScoreEndEl.textContent = `Skor Tertinggi: ${highScore}`;
+        gameOverScreen.classList.remove('hidden');
+        cancelAnimationFrame(gameLoop);
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#8B4513';
+      const poleWidth = canvas.width * 0.1;
+      ctx.fillRect(canvas.width / 2 - poleWidth / 2, 0, poleWidth, canvas.height);
+      ctx.fillStyle = '#228B22';
+      ctx.fillRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
+
+      // Gambar pemain (blok merah-putih)
+      ctx.fillStyle = '#FF0000';
+      ctx.fillRect(player.x, player.y, player.width, player.height / 2);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(player.x, player.y + player.height / 2, player.width, player.height / 2);
+
+      fallingObjects.forEach(obj => obj.sprite(ctx, obj.x, obj.y, obj.width, obj.height));
+
+      ctx.fillStyle = 'white';
+      ctx.font = `${canvas.width * 0.05}px 'Press-Start-2P'`;
+      ctx.textAlign = 'left';
+      ctx.fillText(`Skor: ${score}`, 10, 30);
+      ctx.textAlign = 'right';
+      ctx.fillText('❤️'.repeat(lives), canvas.width - 10, 30);
+    }
+
+    function mainLoop() {
+      if (gameState === 'playing') {
+        update();
+        draw();
+        gameLoop = requestAnimationFrame(mainLoop);
+      }
+    }
+
+    function startGame() {
+      initAudio();
+      playSound('click');
+      init();
+      gameState = 'playing';
+      startScreen.classList.add('hidden');
+      gameOverScreen.classList.add('hidden');
+      mainLoop();
+    }
+
+    // PENAMBAHAN: Fungsi untuk menggambar ikon di legenda
+    function drawLegend() {
+      const legendItems = {
+        'legend-kado': assets.kado,
+        'legend-buku': assets.buku,
+        'legend-sandal': assets.sandal,
+        'legend-oli': assets.oli,
+        'legend-batu': assets.batu,
+      };
+
+      for (const id in legendItems) {
+        const canvasEl = document.getElementById(id);
+        if (canvasEl) {
+          const legendCtx = canvasEl.getContext('2d');
+          const asset = legendItems[id];
+          asset.sprite(legendCtx, 0, 0, canvasEl.width, canvasEl.height);
+        }
+      }
+    }
+
+    startButton.addEventListener('click', startGame);
+    retryButton.addEventListener('click', startGame);
+    window.addEventListener('keydown', (e) => { if (keys.hasOwnProperty(e.key)) keys[e.key] = true; });
+    window.addEventListener('keyup', (e) => { if (keys.hasOwnProperty(e.key)) keys[e.key] = false; });
+    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); handleTouch(e.touches); }, { passive: false });
+    canvas.addEventListener('touchmove', (e) => { e.preventDefault(); handleTouch(e.touches); }, { passive: false });
+    canvas.addEventListener('touchend', (e) => { e.preventDefault(); touchLeft = false; touchRight = false; }, { passive: false });
+
+    function handleTouch(touches) {
+      touchLeft = false; touchRight = false;
+      for (let i = 0; i < touches.length; i++) {
+        const touchX = touches[i].clientX - canvas.getBoundingClientRect().left;
+        if (touchX < canvas.width / 2) touchLeft = true;
+        else touchRight = true;
+      }
+    }
+
+    init();
+    drawLegend(); // Panggil fungsi untuk menggambar legenda saat halaman dimuat
+  </script> -->
+  <script>
+    // Inisialisasi elemen-elemen dari DOM
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const startScreen = document.getElementById('startScreen');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const startButton = document.getElementById('startButton');
+    const retryButton = document.getElementById('retryButton');
+    const finalScoreEl = document.getElementById('finalScore');
+    const highScoreStartEl = document.getElementById('highScoreStart');
+    const highScoreEndEl = document.getElementById('highScoreEnd');
+    // PENAMBAHAN: Inisialisasi elemen video
+    const videoContainer = document.getElementById('videoContainer');
+    const introVideo = document.getElementById('introVideo');
+
+    // Pengaturan ukuran canvas responsif dengan rasio 9:16
+    function resizeCanvas() {
+      const container = document.getElementById('game-container');
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Variabel status permainan
+    let score, lives, highScore, gameLoop;
+    let player, fallingObjects;
+    let gameState = 'start'; // 'start', 'playing', 'gameOver'
+
+    let touchLeft = false;
+    let touchRight = false;
+    const keys = { ArrowLeft: false, ArrowRight: false, a: false, d: false };
+
+    let audioCtx;
+    function initAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    function playSound(type) {
+      if (!audioCtx) return;
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+
+      switch (type) {
+        case 'prize': oscillator.type = 'square'; oscillator.frequency.setValueAtTime(600, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.2); break;
+        case 'obstacle': oscillator.type = 'sawtooth'; oscillator.frequency.setValueAtTime(150, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.4); break;
+        case 'gameOver': oscillator.type = 'triangle'; oscillator.frequency.setValueAtTime(440, audioCtx.currentTime); oscillator.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 1); gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 1); break;
+        case 'click': oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(440, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.1); break;
+        case 'impact': oscillator.type = 'sawtooth'; oscillator.frequency.setValueAtTime(100, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.2); break;
+      }
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 1);
+    }
+
+    const playerWidth = canvas.width * 0.15;
+    const playerHeight = canvas.height * 0.05;
+    const groundHeight = canvas.height * 0.08;
+
+    function drawPixelArt(targetCtx, x, y, size, pixels) {
+      const pixelSize = size / pixels.length;
+      for (let row = 0; row < pixels.length; row++) {
+        for (let col = 0; col < pixels[row].length; col++) {
+          if (pixels[row][col]) {
+            targetCtx.fillStyle = pixels[row][col];
+            targetCtx.fillRect(x + col * pixelSize, y + row * pixelSize, pixelSize, pixelSize);
+          }
+        }
+      }
+    }
+
+    const assets = {
+      kado: { type: 'prize', points: 10, sprite: (t, x, y, w, h) => drawPixelArt(t, x, y, w, [[0, '#FFFF00', '#FFFF00', 0, 0], ['#FF00FF', '#FF00FF', '#FF00FF', '#FF00FF', '#FF00FF'], ['#FF00FF', '#FFFF00', '#FFFF00', '#FF00FF', '#FF00FF'], ['#FF00FF', '#FF00FF', '#FF00FF', '#FF00FF', '#FF00FF'], ['#FF00FF', '#FF00FF', '#FF00FF', '#FF00FF', '#FF00FF']]) },
+      buku: { type: 'prize', points: 10, sprite: (t, x, y, w, h) => drawPixelArt(t, x, y, w, [['#00BFFF', '#00BFFF', '#00BFFF', '#00BFFF'], ['#00BFFF', '#fff', '#fff', '#00BFFF'], ['#00BFFF', '#fff', '#fff', '#00BFFF'], ['#00BFFF', '#00BFFF', '#00BFFF', '#00BFFF']]) },
+      sandal: { type: 'prize', points: 10, sprite: (t, x, y, w, h) => drawPixelArt(t, x, y, w, [[0, '#FFFF00', '#FFFF00', 0], ['#FFFF00', '#FFFF00', '#FFFF00', '#FFFF00'], ['#FFFF00', '#FFFF00', '#FFFF00', '#FFFF00'], ['#FFFF00', '#FFFF00', '#FFFF00', '#FFFF00']]) },
+      oli: { type: 'obstacle', sprite: (t, x, y, w, h) => drawPixelArt(t, x, y, w, [[0, '#222', '#222', 0], ['#444', '#222', '#222', '#444'], ['#444', '#111', '#111', '#444'], ['#444', '#111', '#111', '#444'], [0, '#444', '#444', 0]]) },
+      batu: { type: 'obstacle', sprite: (t, x, y, w, h) => drawPixelArt(t, x, y, w, [[0, '#666', '#666', 0], ['#666', '#444', '#444', '#666'], ['#666', '#444', '#444', '#666'], [0, '#666', '#666', 0]]) }
+    };
+    const assetKeys = Object.keys(assets);
+
+    function init() {
+      score = 0; lives = 3;
+      highScore = localStorage.getItem('panjatPinangHighScore') || 0;
+      highScoreStartEl.textContent = `Skor Tertinggi: ${highScore}`;
+      highScoreEndEl.textContent = `Skor Tertinggi: ${highScore}`;
+      player = { x: canvas.width / 2 - playerWidth / 2, y: canvas.height - groundHeight - playerHeight, width: playerWidth, height: playerHeight, speed: canvas.width * 0.015 };
+      fallingObjects = [];
+      Object.keys(keys).forEach(key => keys[key] = false);
+      touchLeft = false; touchRight = false;
+    }
+
+    function spawnObject() {
+      const size = canvas.width * 0.1;
+      const x = Math.random() * (canvas.width - size);
+      const speed = (canvas.height * 0.002) + Math.random() * (canvas.height * 0.003);
+      const randomAssetKey = assetKeys[Math.floor(Math.random() * assetKeys.length)];
+      const asset = assets[randomAssetKey];
+      if (!asset) return;
+      fallingObjects.push({ x, y: -size, width: size, height: size, speed, type: asset.type, points: asset.points || 0, sprite: asset.sprite });
+    }
+
+    function update() {
+      if (keys.ArrowLeft || keys.a || touchLeft) player.x -= player.speed;
+      if (keys.ArrowRight || keys.d || touchRight) player.x += player.speed;
+      if (player.x < 0) player.x = 0;
+      if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+      for (let i = fallingObjects.length - 1; i >= 0; i--) {
+        const obj = fallingObjects[i];
+        obj.y += obj.speed;
+        if (obj.y + obj.height >= canvas.height - groundHeight) { playSound('impact'); fallingObjects.splice(i, 1); continue; }
+        if (player.x < obj.x + obj.width && player.x + player.width > obj.x && player.y < obj.y + obj.height && player.y + player.height > obj.y) {
+          if (obj.type === 'prize') { score += obj.points; playSound('prize'); } else if (obj.type === 'obstacle') { lives--; playSound('obstacle'); }
+          fallingObjects.splice(i, 1);
+        }
+      }
+      if (Math.random() < 0.018) spawnObject();
+      if (lives <= 0) {
+        gameState = 'gameOver'; playSound('gameOver');
+        if (score > highScore) { highScore = score; localStorage.setItem('panjatPinangHighScore', highScore); }
+        finalScoreEl.textContent = `Skor Akhir: ${score}`;
+        highScoreEndEl.textContent = `Skor Tertinggi: ${highScore}`;
+        gameOverScreen.classList.remove('hidden');
+        cancelAnimationFrame(gameLoop);
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#8B4513';
+      const poleWidth = canvas.width * 0.1;
+      ctx.fillRect(canvas.width / 2 - poleWidth / 2, 0, poleWidth, canvas.height);
+      ctx.fillStyle = '#228B22';
+      ctx.fillRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
+      ctx.fillStyle = '#FF0000';
+      ctx.fillRect(player.x, player.y, player.width, player.height / 2);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(player.x, player.y + player.height / 2, player.width, player.height / 2);
+      fallingObjects.forEach(obj => obj.sprite(ctx, obj.x, obj.y, obj.width, obj.height));
+      ctx.fillStyle = 'white';
+      ctx.font = `${canvas.width * 0.05}px 'Press-Start-2P'`;
+      ctx.textAlign = 'left';
+      ctx.fillText(`Skor: ${score}`, 10, 30);
+      ctx.textAlign = 'right';
+      ctx.fillText('❤️'.repeat(lives), canvas.width - 10, 30);
+    }
+
+    function mainLoop() {
+      if (gameState === 'playing') {
+        update();
+        draw();
+        gameLoop = requestAnimationFrame(mainLoop);
+      }
+    }
+
+    // PERUBAHAN: Fungsi ini sekarang hanya memulai game setelah video selesai
+    function startGame() {
+      // videoContainer.classList.add('hidden'); 
+      init();
+      videoContainer.style.display = 'hidden';
+      gameState = 'playing';
+      gameOverScreen.classList.add('hidden');
+      mainLoop();
+    }
+
+    function playIntro() {
+      initAudio();
+      playSound('click');
+      startScreen.classList.add('hidden');
+      // videoContainer.classList.remove('hidden');
+      videoContainer.style.display = 'block';
+      introVideo.play()
+        .catch(error => {
+          console.log("Autoplay video gagal, memulai game secara langsung:", error);
+          startGame(); // Jika autoplay gagal, langsung mulai game
+        }).then(() => {
+          setTimeout(function () {
+            videoContainer.style.display = 'none';
+          }, 8000)
+        });
+    }
+
+    function drawLegend() {
+      const legendItems = { 'legend-kado': assets.kado, 'legend-buku': assets.buku, 'legend-sandal': assets.sandal, 'legend-oli': assets.oli, 'legend-batu': assets.batu };
+      for (const id in legendItems) {
+        const canvasEl = document.getElementById(id);
+        if (canvasEl) {
+          const legendCtx = canvasEl.getContext('2d');
+          const asset = legendItems[id];
+          asset.sprite(legendCtx, 0, 0, canvasEl.width, canvasEl.height);
+        }
+      }
+    }
+
+    // PERUBAHAN: Tombol start sekarang memutar intro
+    startButton.addEventListener('click', playIntro);
+    retryButton.addEventListener('click', startGame); // Tombol coba lagi langsung memulai game
+    // PENAMBAHAN: Event listener untuk saat video selesai
+    introVideo.addEventListener('ended', startGame);
+
+    window.addEventListener('keydown', (e) => { if (keys.hasOwnProperty(e.key)) keys[e.key] = true; });
+    window.addEventListener('keyup', (e) => { if (keys.hasOwnProperty(e.key)) keys[e.key] = false; });
+    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); handleTouch(e.touches); }, { passive: false });
+    canvas.addEventListener('touchmove', (e) => { e.preventDefault(); handleTouch(e.touches); }, { passive: false });
+    canvas.addEventListener('touchend', (e) => { e.preventDefault(); touchLeft = false; touchRight = false; }, { passive: false });
+
+    function handleTouch(touches) {
+      touchLeft = false; touchRight = false;
+      for (let i = 0; i < touches.length; i++) {
+        const touchX = touches[i].clientX - canvas.getBoundingClientRect().left;
+        if (touchX < canvas.width / 2) touchLeft = true;
+        else touchRight = true;
+      }
+    }
+
+    init();
+    drawLegend();
+  </script>
+</body>
+
+</html>
