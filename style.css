@@ -113,14 +113,14 @@ body {
 }
 
 .home .couple {
-  margin-top: 40px;
+  margin-top: 90px;
   position: relative;
   z-index: 2;
 }
 
 .home .couple h2 {
   font-family: 'Sacramento';
-  font-size: 2rem;
+  font-size: 3rem;
   color: var(--pink);
   white-space: normal;
 }
@@ -462,7 +462,7 @@ footer li {
 
 @media (max-width: 576px) {
   .home .couple .col-lg-6:last-child .row {
-    margin-top: -35px;
+    margin-top: -95px;
   }
 }
 
