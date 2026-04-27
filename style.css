@@ -112,6 +112,12 @@ body {
   margin-bottom: 1rem;
 }
 
+.home h4 {
+  font-size: 2rem;
+}
+
+
+
 .home p {
   font-size: 1.1rem;
   color: #666;
